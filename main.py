@@ -1,6 +1,7 @@
 import mysql_connector
 import pymysql
-from datetime import datetime
+from log_writer import log_film
+
 
 
 def search_by_title(connection):
@@ -19,6 +20,7 @@ def search_by_title(connection):
             for id_film,(film,year) in enumerate(all_found_films,1):
                 print(f"{id_film}.{film}({year})")
 
+    log_film("keyword",{"keyword": title},len(all_found_films))
 
 
 
@@ -58,8 +60,8 @@ def search_by_genre_years(connection):
         for id_mov,(film, year) in enumerate(all_found_movies,1):
             print(f"{id_mov}.{film}({year})")
 
-
-
+    log_film("genre-year",{"genre": search_genre,"year from": start_year, "year to": end_year},
+             len(all_found_movies))
 
 
 

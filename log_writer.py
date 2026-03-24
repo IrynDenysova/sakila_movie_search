@@ -1,5 +1,3 @@
-from itertools import count
-
 from pymongo import MongoClient
 from datetime import datetime
 
@@ -11,12 +9,10 @@ client = MongoClient("mongodb://ich_editor:verystrongpassword@mongo.itcareerhub.
 
 logs_collection = client["ich_edit"][mongo_collection]
 
-def log_film(search_type,info, count):
+def log_film(search_type,params, count):
     logs_collection.insert_one({
-            "timestamp": datetime.now(),
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "search_type": search_type,
-            "params": {
-            "query": info
-            },
+            "params": params,
             "results_count": count
             })
