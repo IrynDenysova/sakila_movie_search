@@ -9,7 +9,7 @@ client = MongoClient("mongodb://ich_editor:verystrongpassword@mongo.itcareerhub.
 
 logs_collection = client["ich_edit"][mongo_collection]
 
-def log_film(search_type,params, count):
+def log_film(search_type, params, count):
     logs_collection.insert_one({
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "search_type": search_type,
