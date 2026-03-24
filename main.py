@@ -1,7 +1,8 @@
 import mysql_connector
 import pymysql
 from log_writer import log_film
-from log_stats import get_unique_queries
+from log_stats import get_unique_queries, get_stats_queries
+
 
 
 
@@ -88,6 +89,7 @@ with pymysql.connect(**mysql_connector.config) as connection:
             elif choice == "3":
                 """View popular or recent queries"""
                 get_unique_queries()
+                get_stats_queries()
 
             elif choice == "0":
                 break
