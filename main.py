@@ -16,8 +16,8 @@ def search_by_title(connection):
             return
         else:
             all_found_films = cursor.fetchall()
-            for film,year in all_found_films:
-                print(f"-{film},{year}")
+            for id_film,(film,year) in enumerate(all_found_films,1):
+                print(f"{id_film}.{film}({year})")
 
 
 
@@ -34,15 +34,15 @@ def view_genre_years(connection):
             GROUP BY c.name""")
 
         all_found_genres_years = cursor.fetchall()
-        for min_years ,max_year, genre in all_found_genres_years:
-            print(f"-{genre} - ({min_years} -{max_year})")
+        for film_id,(min_years ,max_year, genre )in enumerate(all_found_genres_years,1):
+            print(f"{film_id}.{genre} ({min_years} -{max_year})")
 
 
 def search_by_genre_years(connection):
     with connection.cursor() as cursor:
-        search_genre = input("Enter the genre, you are looking for: ").strip().lower()
-        start_year = input("Enter the year you are searching from: ")
-        end_year = input("Enter the year you are searching to (Enter if the year is the same): ") or start_year
+        search_genre = input("Enter the genre or tile of genre, you are looking for: ").strip().lower()
+        start_year = input("Enter the year you are searching from: ").strip()
+        end_year = input("Enter the year you are searching to (Enter if the year is the same): ").strip() or start_year
         cursor.execute("""
             SELECT f.title, f.release_year
             FROM film as f
@@ -50,11 +50,13 @@ def search_by_genre_years(connection):
             ON f.film_id = fc.film_id
             JOIN category as c
             ON c.category_id = fc.category_id
-            WHERE c.name = %s AND f.release_year BETWEEN %s AND %s""",
-                                    (search_genre,start_year,end_year,))
+            WHERE c.name like %s AND f.release_year BETWEEN %s AND %s""",
+                                    (f"%{search_genre}%",start_year,end_year,))
         all_found_movies = cursor.fetchall()
-        for film,year in all_found_movies:
-            print(f"-{film},{year}")
+        if not all_found_movies:
+            print(f"No film found.")
+        for id_mov,(film, year) in enumerate(all_found_movies,1):
+            print(f"{id_mov}.{film}({year})")
 
 
 
