@@ -111,13 +111,15 @@ def search_by_genre_years(connection):
 with pymysql.connect(**mysql_connector.config) as connection:
     with connection.cursor() as cursor:
         while True:
-            print("\n--- Sakila movie finder ---")
+            print("\n" + "*" * 50)
+            print("FILM FINDER")
+            print("*" * 50)
             print("1. Search by keyword")
             print("2. Search by genre and year range")
             print("3. View popular or recent queries")
             print("0. Exit")
 
-            choice = input("Enter your choice: ")
+            choice = input("ENTER YOUR CHOICE: ")
             if choice == "1":
                 search_by_title(connection)
 
