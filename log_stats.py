@@ -21,6 +21,6 @@ def get_stats_queries(limit=5):
             {"$limit": limit}
     ]
 
-    print("--- Last 5 queries ---")
+    print("--- Top 5 queries ---")
     for id, query in enumerate(logs_collection.aggregate(stats_queries),1):
         print(f"{id}. {query["_id"]} {query["count"]} time(s)")

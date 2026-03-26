@@ -1,5 +1,6 @@
 import mysql_connector
 import pymysql
+from pymysql.cursors import DictCursor
 from log_writer import log_film
 from log_stats import get_unique_queries, get_stats_queries
 
@@ -9,7 +10,7 @@ def paginate_query(connection, query, params, limit=10, start_offset=0):
     total = 0
 
     while True:
-        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+        with connection.cursor(DictCursor) as cursor:
             cursor.execute(query, params + (limit, offset))
             rows = cursor.fetchall()
 
@@ -38,7 +39,8 @@ def paginate_query(connection, query, params, limit=10, start_offset=0):
 
 
 def search_by_title(connection):
-    title = input("Enter film title or part of title: ").strip()
+    with connection.cursor() as cursor:
+        title = input("Enter film title or part of title: ").strip()
 
     if not title:
         print("Empty input.")
