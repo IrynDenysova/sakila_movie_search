@@ -4,26 +4,57 @@ from log_writer import log_film
 from log_stats import get_unique_queries, get_stats_queries
 
 
+def paginate_query(connection, query, params, limit=10, start_offset=0):
+    offset = start_offset
+    total = 0
+
+    while True:
+        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute(query, params + (limit, offset))
+            rows = cursor.fetchall()
+
+        if not rows:
+            if offset == start_offset:
+                print("No films found.")
+            else:
+                print("No more results.")
+            break
+
+        for i, row in enumerate(rows, start=offset + 1):
+            print(f"{i}. {row['title']} ({row['release_year']})")
+
+        total += len(rows)
+
+        if len(rows) < limit:
+            break
+
+        offset += limit
+
+        user_input = input("\nShow more? (y/n): ").lower()
+        if user_input != "y":
+            break
+
+    return total
 
 
 def search_by_title(connection):
-    title = input("Enter film title or part of title: ").strip().lower()
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT title , release_year 
-            FROM film
-            WHERE title like %s """,
-                       (f"%{title}%" ,))
-        if not title:
-            print(f"No film found.")
-            return
-        else:
-            all_found_films = cursor.fetchall()
-            for id_film,(film,year) in enumerate(all_found_films,1):
-                print(f"{id_film}.{film}({year})")
+    title = input("Enter film title or part of title: ").strip()
 
-    log_film("keyword",{"keyword": title},len(all_found_films))
+    if not title:
+        print("Empty input.")
+        return
 
+    query = """
+        SELECT title, release_year
+        FROM film
+        WHERE title LIKE %s
+        ORDER BY title
+        LIMIT %s OFFSET %s
+    """
+
+    total = paginate_query(connection, query, (f"%{title}%",))
+
+    log_film("keyword", {"keyword": title}, total)
 
 
 def view_genre_years(connection):
@@ -43,29 +74,36 @@ def view_genre_years(connection):
 
 
 def search_by_genre_years(connection):
-    with connection.cursor() as cursor:
-        search_genre = input("Enter the genre or tile of genre, you are looking for: ").strip().lower()
-        start_year = input("Enter the year you are searching from: ").strip()
-        end_year = input("Enter the year you are searching to (Enter if the year is the same): ").strip() or start_year
-        cursor.execute("""
-            SELECT f.title, f.release_year
-            FROM film as f
-            JOIN film_category as fc
-            ON f.film_id = fc.film_id
-            JOIN category as c
-            ON c.category_id = fc.category_id
-            WHERE c.name like %s AND f.release_year BETWEEN %s AND %s""",
-                                    (f"%{search_genre}%",start_year,end_year,))
-        all_found_movies = cursor.fetchall()
-        if not all_found_movies:
-            print(f"No film found.")
-        for id_mov,(film, year) in enumerate(all_found_movies,1):
-            print(f"{id_mov}.{film}({year})")
+    search_genre = input("Enter the genre: ").strip()
+    start_year = input("Enter year from: ").strip()
+    end_year = input("Enter year to: ").strip() or start_year
 
-    log_film("genre-year",{"genre": search_genre,"year from": start_year, "year to": end_year},
-             len(all_found_movies))
+    if not search_genre or not start_year:
+        print("Invalid input.")
+        return
 
+    query = """
+        SELECT f.title, f.release_year
+        FROM film AS f
+        JOIN film_category AS fc ON f.film_id = fc.film_id
+        JOIN category AS c ON c.category_id = fc.category_id
+        WHERE c.name LIKE %s
+        AND f.release_year BETWEEN %s AND %s
+        ORDER BY f.title
+        LIMIT %s OFFSET %s
+    """
 
+    total = paginate_query(
+        connection,
+        query,
+        (f"%{search_genre}%", start_year, end_year)
+    )
+
+    log_film(
+        "genre-year",
+        {"genre": search_genre, "year from": start_year, "year to": end_year},
+        total
+    )
 
 
 with pymysql.connect(**mysql_connector.config) as connection:
