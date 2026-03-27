@@ -7,149 +7,205 @@ from tabulate import tabulate
 
 
 def paginate_query(connection, query, params, limit=10, start_offset=0):
-
+    """
+        Executes a paginated SQL query and prints results page by page.
+        :param connection: database connection
+        :param query: SQL query with LIMIT and OFFSET placeholders
+        :param params: tuple of query parameters
+        :param limit: number of records per page
+        :param start_offset: initial offset
+        :return: total number of fetched records
+        """
     offset = start_offset
     total = 0
+    try:
+        while True:
+            try:
+                with connection.cursor(DictCursor) as cursor:
+                    cursor.execute(query, params + (limit, offset))
+                    rows = cursor.fetchall()
 
-    while True:
-        with connection.cursor(DictCursor) as cursor:
-            cursor.execute(query, params + (limit, offset))
-            rows = cursor.fetchall()
+            except Exception as db_error:
+                print(f"Error executing request: {db_error}")
+                break
 
-        if not rows:
-            if offset == start_offset:
-                print("No films found.")
-            else:
-                print("No more results.")
-            break
+            if not rows:
+                if offset == start_offset:
+                    print("No films found.")
+                else:
+                    print("No more results.")
+                break
 
-        for i, row in enumerate(rows, start=offset + 1):
-            print(f"{i}. {row['title']} ({row['release_year']})")
+            for i, row in enumerate(rows, start=offset + 1):
+                print(f"{i}. {row['title']} ({row['release_year']})")
 
-        total += 1
+            total += len(rows)
 
-        if len(rows) < limit:
-            break
+            if len(rows) < limit:
+                break
 
-        offset += limit
-
-        user_input = input("\nShow more? (y/n): ").lower()
-        if user_input != "y":
-            break
-
+            offset += limit
+            try:
+                user_input = input("\nShow more? (y/n): ").lower()
+            except Exception:
+                print("Invalid input.")
+                break
+            if user_input != "y":
+                break
+    except Exception as e:
+        print(f"Unexpected error: {e}")
     return total
 
 
 def search_by_title(connection):
-    title = input("Enter film title or part of title: ").strip()
+    """Searches films by title with pagination."""
+    try:
+        title = input("Enter film title or part of title: ").strip()
+        if not title:
+            print("Empty input.")
+            return
 
-    if not title:
-        print("Empty input.")
-        return
+        query = """
+                SELECT title, release_year
+                FROM film
+                WHERE title LIKE %s
+                ORDER BY title
+                LIMIT %s OFFSET %s
+            """
+        try:
+            total = paginate_query(connection, query, (f"%{title}%",))
+        except Exception as pagination_error:
+            print(f"Error during pagination: {pagination_error}")
+            return
+        try:
+            log_film("keyword", {"keyword": title}, total)
+        except Exception as log_error:
+            print(f"Logging error: {log_error}")
 
-    query = """
-        SELECT title, release_year
-        FROM film
-        WHERE title LIKE %s
-        ORDER BY title
-        LIMIT %s OFFSET %s
-    """
+    except Exception as input_error:
+        print(f"Unexpected error: {input_error}")
 
-    total = paginate_query(connection, query, (f"%{title}%",))
-
-    log_film("keyword", {"keyword": title}, total)
 
 
 def view_genre_years(connection):
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT MIN(f.release_year), MAX(f.release_year), c.name
-            FROM film as f
-            JOIN film_category as fc
-            ON f.film_id = fc.film_id
-            JOIN category as c
-            ON c.category_id = fc.category_id
-            GROUP BY c.name""")
+    """ Displays min and max release years for each genre."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                    SELECT MIN(f.release_year), MAX(f.release_year), c.name
+                    FROM film as f
+                    JOIN film_category as fc
+                    ON f.film_id = fc.film_id
+                    JOIN category as c
+                    ON c.category_id = fc.category_id
+                    GROUP BY c.name""")
 
-        all_found_genres_years = cursor.fetchall()
-        for film_id,(min_years ,max_year, genre )in enumerate(all_found_genres_years,1):
-            print(f"{film_id}.{genre} ({min_years} -{max_year})")
+            all_found_genres_years = cursor.fetchall()
+            for film_id,(min_years ,max_year, genre )in enumerate(all_found_genres_years,1):
+                print(f"{film_id}.{genre} ({min_years} -{max_year})")
+    except Exception as e:
+        print(f"Error fetching genre data: {e}")
 
 
 def search_by_genre_years(connection):
-    search_genre = input("Enter the genre: ").strip()
-    start_year = input("Enter year from: ").strip()
-    end_year = input("Enter year to (or Enter): ").strip() or start_year
+    """ Searches films by genre and year range with pagination."""
+    try:
+        search_genre = input("Enter the genre: ").strip()
+        start_year = input("Enter year from: ").strip()
+        end_year = input("Enter year to (or Enter): ").strip() or start_year
 
-    if not search_genre or not start_year:
-        print("Invalid input.")
-        return
+        if not search_genre or not start_year:
+            print("Invalid input.")
+            return
 
-    query = """
-        SELECT f.title, f.release_year
-        FROM film AS f
-        JOIN film_category AS fc ON f.film_id = fc.film_id
-        JOIN category AS c ON c.category_id = fc.category_id
-        WHERE c.name LIKE %s
-        AND f.release_year BETWEEN %s AND %s
-        ORDER BY f.title
-        LIMIT %s OFFSET %s
-    """
+        if not start_year.isdigit() or not end_year.isdigit():
+            print("Year must be numeric.")
+            return
 
-    total = paginate_query(
-        connection,
-        query,
-        (f"%{search_genre}%", start_year, end_year)
-    )
+        query = """
+            SELECT f.title, f.release_year
+            FROM film AS f
+            JOIN film_category AS fc ON f.film_id = fc.film_id
+            JOIN category AS c ON c.category_id = fc.category_id
+            WHERE c.name LIKE %s
+            AND f.release_year BETWEEN %s AND %s
+            ORDER BY f.title
+            LIMIT %s OFFSET %s
+        """
 
-    log_film(
-        "genre-year",
-        {"genre": search_genre, "year from": start_year, "year to": end_year},
-        total
-    )
+        try:
+            total = paginate_query(
+                    connection,
+                    query,
+                    (f"%{search_genre}%", start_year, end_year))
+        except Exception as db_error:
+            print(f"Database error: {db_error}")
+            return
+        try:
+            log_film(
+                "genre-year",
+                {"genre": search_genre, "year from": start_year, "year to": end_year},
+                total)
+        except Exception as log_error:
+            print(f"Logging error: {log_error}")
+
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
 
 def view_rating(connection):
-    with connection.cursor() as cursor:
-        cursor.execute('''SELECT distinct(rating),
-                            CASE
-                            WHEN rating = "NC-17" THEN "Adults only"
-                            WHEN rating = "R" THEN "Restricted"
-                            WHEN rating = "R-13" THEN "Parents Strongly Cautioned"
-                            WHEN rating = "PG" THEN "Parental Guidance Suggested"
-                            ELSE "General Audiences"
-                            END AS description_rating
-                            FROM film''')
+    """ Displays all unique film ratings with descriptions."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""SELECT distinct(rating),
+                                CASE
+                                WHEN rating = "NC-17" THEN "Adults only"
+                                WHEN rating = "R" THEN "Restricted"
+                                WHEN rating = "R-13" THEN "Parents Strongly Cautioned"
+                                WHEN rating = "PG" THEN "Parental Guidance Suggested"
+                                ELSE "General Audiences"
+                                END AS description_rating
+                                FROM film""")
 
-        all_ratings = cursor.fetchall()
-        headers = ["#", "Rating", "Description_rating"]
-        table_data = [[i, r[0], r[1]] for i, r in enumerate(all_ratings, 1)]
+            all_ratings = cursor.fetchall()
+            headers = ["#", "Rating", "Description_rating"]
+            table_data = [[i, r[0], r[1]] for i, r in enumerate(all_ratings, 1)]
 
-        print(tabulate(table_data, headers=headers, tablefmt="fancy_grid"))
+            print(tabulate(table_data, headers=headers, tablefmt="fancy_grid"))
 
+    except Exception as e:
+        print(f"Error fetching ratings: {e}")
 
 
 
 
 def search_by_rating(connection):
-    rating = input("Enter rating (PG, G, NC-17...): ").strip().upper()
+    """ Searches films by rating with pagination."""
+    try:
+        rating = input("Enter rating (PG, G, NC-17...): ").strip().upper()
 
-    if not rating:
-        print("Invalid input.")
-        return
+        if not rating:
+            print("Invalid input.")
+            return
 
-    query = """
+        query = """
                     SELECT title, rating, release_year 
                     FROM film
                     WHERE rating LIKE %s
                     ORDER BY rating
                     LIMIT %s OFFSET %s"""
+        try:
+            total = paginate_query(connection, query, (f"%{rating}%",))
+        except Exception as db_error:
+            print(f"Database error: {db_error}")
+            return
+        try:
+            log_film("rating", {"keyword": rating}, total)
+        except Exception as log_error:
+            print(f"Logging error: {log_error}")
 
-
-
-    total = paginate_query(connection, query, (f"%{rating}%",))
-
-    log_film("rating", {"keyword": rating}, total)
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
 
 
