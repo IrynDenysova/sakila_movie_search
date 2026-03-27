@@ -8,13 +8,13 @@ def format_params(params: dict):
 
 def get_unique_queries(limit=5):
     unique_query = [
-        {"$sort": {"timestamp": 1}},
+        {"$sort": {"timestamp": -1}},
         {"$group": {
             "_id": "$params",
             "last_time": {"$first": "$timestamp"},
             "type": {"$first": "$search_type"}
         }},
-        {"$sort": {"last_time": 1}},
+        {"$sort": {"last_time": -1}},
         {"$limit": limit}
     ]
 

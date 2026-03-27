@@ -7,6 +7,9 @@ from tabulate import tabulate
 
 
 def paginate_query(connection, query, params, limit=10, start_offset=0):
+    if not isinstance(params, tuple):
+        params = (params,)
+
     offset = start_offset
     total = 0
 
@@ -23,7 +26,7 @@ def paginate_query(connection, query, params, limit=10, start_offset=0):
             break
 
         for i, row in enumerate(rows, start=offset + 1):
-            print(f"{i}. {row['title']} ({row['release_year']})")
+            print(f"{i}. {row['title']} ({row['release_year']})-{row['rating']}")
 
         total += len(rows)
 
@@ -132,20 +135,23 @@ def view_rating(connection):
 
 def search_by_rating(connection):
     rating = input("Enter rating (PG, G, NC-17...): ").strip().upper()
-    with connection.cursor() as cursor:
-        cursor.execute('''
+
+    if not rating:
+        print("Invalid input.")
+        return
+
+    query = """
                     SELECT title, rating, release_year 
                     FROM film
-                    WHERE rating LIKE %s ''', (f"%{rating}%",))
-        all_ratings = cursor.fetchall()
-
-        for i, (title, rating, release_year) in enumerate(all_ratings, 1):
-            print(f"{i}. {title} ({rating}) - {release_year}")
+                    WHERE rating LIKE %s
+                    ORDER BY rating
+                    LIMIT %s OFFSET %s"""
 
 
 
-        log_film("rating", {"keyword": rating}, len(all_ratings))
+    total = paginate_query(connection, query, (f"%{rating}%",))
 
+    log_film("rating", {"keyword": rating}, total)
 
 
 
@@ -176,8 +182,8 @@ with pymysql.connect(**mysql_connector.config) as connection:
 
 
             elif choice == "4":
-                get_unique_queries()
-                get_stats_queries()
+                get_unique_queries(connection)
+                get_stats_queries(connection)
 
 
             elif choice == "0":
