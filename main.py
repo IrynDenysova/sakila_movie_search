@@ -7,8 +7,6 @@ from tabulate import tabulate
 
 
 def paginate_query(connection, query, params, limit=10, start_offset=0):
-    if not isinstance(params, tuple):
-        params = (params,)
 
     offset = start_offset
     total = 0
@@ -26,9 +24,9 @@ def paginate_query(connection, query, params, limit=10, start_offset=0):
             break
 
         for i, row in enumerate(rows, start=offset + 1):
-            print(f"{i}. {row['title']} ({row['release_year']})-{row['rating']}")
+            print(f"{i}. {row['title']} ({row['release_year']})")
 
-        total += len(rows)
+        total += 1
 
         if len(rows) < limit:
             break
@@ -158,6 +156,7 @@ def search_by_rating(connection):
 with pymysql.connect(**mysql_connector.config) as connection:
     with connection.cursor() as cursor:
         while True:
+
             print("\n" + "*" * 50)
             print("FILM FINDER")
             print("*" * 50)
@@ -182,8 +181,8 @@ with pymysql.connect(**mysql_connector.config) as connection:
 
 
             elif choice == "4":
-                get_unique_queries(connection)
-                get_stats_queries(connection)
+                get_unique_queries()
+                get_stats_queries()
 
 
             elif choice == "0":
