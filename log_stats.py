@@ -32,7 +32,7 @@ def get_unique_queries(limit=5):
             format_params(query["_id"])
         ])
 
-    print(tabulate(rows,headers=["#", "Last time", "Type", "Params"],tablefmt="grid"))
+    print(tabulate(rows,headers=["#", "Last time", "Type", "Params"],tablefmt="fancy_grid"))
 
 
 
@@ -57,4 +57,4 @@ def get_stats_queries(limit=5):
             query["count"]
         ])
 
-    print(tabulate(rows,headers=["#", "Params", "Count"],tablefmt="grid"))
+    print(tabulate(rows,headers=["#", "Params", "Count"],tablefmt="fancy_grid"))
