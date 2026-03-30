@@ -48,7 +48,7 @@ def paginate_query(connection, query, count_query, params, limit=10):
             page += 1
 
             if offset < total:
-                if input("\nShow more? (y/n): ").lower() != "y":
+                if input("\nShow more? (y/N): ").lower() != "y":
                     break
 
         return total
@@ -134,14 +134,14 @@ def search_by_genre_years(connection, genres: dict[str, tuple[int, int]]):
         while True:
             min_year = genres[search_genre][0]
             max_year = genres[search_genre][1]
-            start_year = input(f"Enter year from (default{min_year}): ").strip() or str(min_year)
-            end_year = input(f"Enter year to (default {max_year}): ").strip() or str(max_year)
+            start_year = input(f"Enter start year from (default {min_year}): ").strip() or str(min_year)
+            end_year = input(f"Enter end year to (default {max_year}): ").strip() or str(max_year)
 
             if not start_year.isdigit() or not end_year.isdigit():
                 print("Year must be numeric.")
                 continue
             elif int(start_year) > int(end_year):
-                print("Year must be greater than year.")
+                print("Start year must be greater than end year.")
                 continue
             elif not start_year:
                 start_year = start_year
