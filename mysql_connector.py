@@ -12,9 +12,4 @@ config = {
 }
 
 
-try:
-    connection = pymysql.connect(**config)
-except pymysql.MySQLError:
-    print("No connection to MySQL server")
-except pymysql.err.OperationalError:
-    print("No connection to MySQL server")
+
