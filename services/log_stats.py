@@ -1,4 +1,4 @@
-from log_writer import logs_collection
+from .log_writer import logs_collection
 
 from tabulate import tabulate
 

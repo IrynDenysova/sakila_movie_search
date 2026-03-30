@@ -1,6 +1,6 @@
-from paginationer import paginate_query
+from services.paginationer import paginate_query
 from tabulate import tabulate
-from log_writer import log_film
+from .log_writer import log_film
 
 
 def search_by_title(connection):
