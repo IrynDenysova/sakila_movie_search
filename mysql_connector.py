@@ -7,7 +7,14 @@ config = {
     'host': os.getenv('MYSQL_HOST'),
     'user': os.getenv('MYSQL_USER'),
     'password': os.getenv('MYSQL_PASSWORD'),
-    'database': os.getenv('MYSQL_DATABASE')
+    'database': os.getenv('MYSQL_DATABASE'),
+    'connect_timeout': 5
 }
 
-connection = pymysql.connect(**config)
+
+try:
+    connection = pymysql.connect(**config)
+except pymysql.MySQLError:
+    print("No connection to MySQL server")
+except pymysql.err.OperationalError:
+    print("No connection to MySQL server")

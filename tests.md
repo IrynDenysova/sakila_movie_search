@@ -18,3 +18,6 @@
 3. No timeout / timeout too long
 4. No connection is not handled
 5. No results for "genre=Travel, year from=0, year to=5000"
+6. 
+7. показывало только валидные даты
+8. надо продумать чтоб не соскакивало обратно в меню а продолжалось

@@ -6,55 +6,57 @@ from log_stats import get_unique_queries, get_stats_queries
 from tabulate import tabulate
 
 
-def paginate_query(connection, query, params, limit=10, start_offset=0):
+def paginate_query(connection, query, count_query, params, limit=10):
     """
         Executes a paginated SQL query and prints results page by page.
         :param connection: database connection
         :param query: SQL query with LIMIT and OFFSET placeholders
         :param params: tuple of query parameters
         :param limit: number of records per page
-        :param start_offset: initial offset
         :return: total number of fetched records
         """
-    offset = start_offset
-    total = 0
-    try:
-        while True:
-            try:
-                with connection.cursor(DictCursor) as cursor:
-                    cursor.execute(query, params + (limit, offset))
-                    rows = cursor.fetchall()
 
-            except Exception as db_error:
-                print(f"Error executing request: {db_error}")
-                break
+
+    offset = 0
+    page = 1
+
+    try:
+            # Получаем общее количество записей
+        with connection.cursor() as cursor:
+            cursor.execute(count_query, params)
+            total = cursor.fetchone()[0]
+
+        if total == 0:
+            print("No films found.")
+            return 0
+
+        while offset < total:
+            print(f"\n----- Found {total} film(s) -----")
+            print(f"\n--- Page {page} ---")
+            with connection.cursor(DictCursor) as cursor:
+                cursor.execute(query, params + (limit, offset))
+                rows = cursor.fetchall()
 
             if not rows:
-                if offset == start_offset:
-                    print("No films found.")
-                else:
-                    print("No more results.")
+                print("No more results.")
                 break
 
             for i, row in enumerate(rows, start=offset + 1):
                 print(f"{i}. {row['title']} ({row['release_year']})")
 
-            total += len(rows)
+            offset += len(rows)
+            page += 1
 
-            if len(rows) < limit:
-                break
+            if offset < total:
+                if input("\nShow more? (y/n): ").lower() != "y":
+                    break
 
-            offset += limit
-            try:
-                user_input = input("\nShow more? (y/n): ").lower()
-            except Exception:
-                print("Invalid input.")
-                break
-            if user_input != "y":
-                break
+        return total
+
     except Exception as e:
-        print(f"Unexpected error: {e}")
-    return total
+        print(f"Error: {e}")
+        return 0
+    
 
 
 def search_by_title(connection):
@@ -72,8 +74,11 @@ def search_by_title(connection):
                 ORDER BY title
                 LIMIT %s OFFSET %s
             """
+        count_query = """SELECT COUNT(*)
+                FROM film
+                WHERE title LIKE %s"""
         try:
-            total = paginate_query(connection, query, (f"%{title}%",))
+            total = paginate_query(connection, query, count_query,(f"%{title}%",))
         except Exception as pagination_error:
             print(f"Error during pagination: {pagination_error}")
             return
@@ -87,8 +92,9 @@ def search_by_title(connection):
 
 
 
-def view_genre_years(connection):
+def view_genre_years(connection) -> dict[str, tuple[int, int]]:
     """ Displays min and max release years for each genre."""
+    genres_with_years = {}
     try:
         with connection.cursor() as cursor:
             cursor.execute("""
@@ -101,26 +107,45 @@ def view_genre_years(connection):
                     GROUP BY c.name""")
 
             all_found_genres_years = cursor.fetchall()
-            for film_id,(min_years ,max_year, genre )in enumerate(all_found_genres_years,1):
-                print(f"{film_id}.{genre} ({min_years} -{max_year})")
+            table_data = []
+            for i,(min_year ,max_year, genre )in enumerate(all_found_genres_years,1):
+                table_data.append([i,genre,f"{min_year}-{max_year}"])
+                headers = ["Film ID","Genre","Years"]
+                genres_with_years[genre] = (min_year,max_year)
+            print(tabulate(table_data,headers= headers ,tablefmt="fancy_grid"))
     except Exception as e:
         print(f"Error fetching genre data: {e}")
+    return genres_with_years
 
 
-def search_by_genre_years(connection):
+def search_by_genre_years(connection, genres: dict[str, tuple[int, int]]):
     """ Searches films by genre and year range with pagination."""
     try:
-        search_genre = input("Enter the genre: ").strip()
-        start_year = input("Enter year from: ").strip()
-        end_year = input("Enter year to (or Enter): ").strip() or start_year
+        while True:
+            search_genre = input("Enter the genre: ").strip().title()
+            if search_genre not in genres:
+                print("Genre not found.")
+                continue
+            elif not search_genre:
+                print("Invalid genre.")
+                continue
+            break
 
-        if not search_genre or not start_year:
-            print("Invalid input.")
-            return
+        while True:
+            min_year = genres[search_genre][0]
+            max_year = genres[search_genre][1]
+            start_year = input(f"Enter year from (default{min_year}): ").strip() or str(min_year)
+            end_year = input(f"Enter year to (default {max_year}): ").strip() or str(max_year)
 
-        if not start_year.isdigit() or not end_year.isdigit():
-            print("Year must be numeric.")
-            return
+            if not start_year.isdigit() or not end_year.isdigit():
+                print("Year must be numeric.")
+                continue
+            elif int(start_year) > int(end_year):
+                print("Year must be greater than year.")
+                continue
+            elif not start_year:
+                start_year = start_year
+            break
 
         query = """
             SELECT f.title, f.release_year
@@ -132,11 +157,18 @@ def search_by_genre_years(connection):
             ORDER BY f.title
             LIMIT %s OFFSET %s
         """
+        count_query = """SELECT COUNT(*)
+            FROM film AS f
+            JOIN film_category AS fc ON f.film_id = fc.film_id
+            JOIN category AS c ON c.category_id = fc.category_id
+            WHERE c.name LIKE %s
+            AND f.release_year BETWEEN %s AND %s
+            ORDER BY f.title"""
 
         try:
             total = paginate_query(
                     connection,
-                    query,
+                    query, count_query,
                     (f"%{search_genre}%", start_year, end_year))
         except Exception as db_error:
             print(f"Database error: {db_error}")
@@ -192,10 +224,15 @@ def search_by_rating(connection):
                     SELECT title, rating, release_year 
                     FROM film
                     WHERE rating LIKE %s
-                    ORDER BY rating
+                    ORDER BY release_year
                     LIMIT %s OFFSET %s"""
+
+        count_query = """SELECT COUNT(*)
+                    FROM film
+                    WHERE rating LIKE %s
+                    ORDER BY rating"""
         try:
-            total = paginate_query(connection, query, (f"%{rating}%",))
+            total = paginate_query(connection, query, count_query,(f"%{rating}%",))
         except Exception as db_error:
             print(f"Database error: {db_error}")
             return
@@ -219,16 +256,18 @@ with pymysql.connect(**mysql_connector.config) as connection:
             print("1. Search by keyword")
             print("2. Search by genre and year range")
             print("3. Search by rating")
-            print("4. View popular or recent queries")
+            print("4. View recent queries")
+            print("5. View popular queries")
             print("0. Exit")
 
             choice = input("ENTER YOUR CHOICE: ")
             if choice == "1":
                 search_by_title(connection)
 
+
             elif choice == "2":
-                view_genre_years(connection)
-                search_by_genre_years(connection)
+                genres = view_genre_years(connection)
+                search_by_genre_years(connection, genres)
 
 
             elif choice == "3":
@@ -238,6 +277,9 @@ with pymysql.connect(**mysql_connector.config) as connection:
 
             elif choice == "4":
                 get_unique_queries()
+
+
+            elif choice == "5":
                 get_stats_queries()
 
 
