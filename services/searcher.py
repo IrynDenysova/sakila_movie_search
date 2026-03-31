@@ -11,6 +11,7 @@ def search_by_title(connection):
             print("Empty input.")
             return
 
+        # Main query with pagination (LIMIT + OFFSET)
         query = """
                 SELECT title, release_year
                 FROM film
@@ -18,14 +19,18 @@ def search_by_title(connection):
                 ORDER BY title
                 LIMIT %s OFFSET %s
             """
+
+        # Query to count total matching records
         count_query = """SELECT COUNT(*)
                 FROM film
                 WHERE title LIKE %s"""
+        # Execute paginated query
         try:
             total = paginate_query(connection, query, count_query,(f"%{title}%",))
         except Exception as pagination_error:
             print(f"Error during pagination: {pagination_error}")
             return
+        # Log search result
         try:
             log_film("keyword", {"keyword": title}, total)
         except Exception as log_error:
@@ -41,6 +46,7 @@ def view_genre_years(connection) -> dict[str, tuple[int, int]]:
     genres_with_years = {}
     try:
         with connection.cursor() as cursor:
+            # Get min/max year per genre
             cursor.execute("""
                     SELECT MIN(f.release_year), MAX(f.release_year), c.name
                     FROM film as f
@@ -52,6 +58,7 @@ def view_genre_years(connection) -> dict[str, tuple[int, int]]:
 
             all_found_genres_years = cursor.fetchall()
             table_data = []
+            # Format results
             for i,(min_year ,max_year, genre )in enumerate(all_found_genres_years,1):
                 table_data.append([i,genre,f"{min_year}-{max_year}"])
                 headers = ["Film ID","Genre","Years"]
@@ -65,6 +72,7 @@ def view_genre_years(connection) -> dict[str, tuple[int, int]]:
 def search_by_genre_years(connection, genres: dict[str, tuple[int, int]]):
     """ Searches films by genre and year range with pagination."""
     try:
+        # Ask user for genre until valid
         while True:
             search_genre = input("Enter the genre: ").strip().title()
             if search_genre not in genres:
@@ -75,12 +83,14 @@ def search_by_genre_years(connection, genres: dict[str, tuple[int, int]]):
                 continue
             break
 
+        # Ask user for year range
         while True:
             min_year = genres[search_genre][0]
             max_year = genres[search_genre][1]
             start_year = input(f"Enter start year from (default {min_year}): ").strip() or str(min_year)
             end_year = input(f"Enter end year to (default {max_year}): ").strip() or str(max_year)
 
+            # Validate input
             if not start_year.isdigit() or not end_year.isdigit():
                 print("Year must be numeric.")
                 continue
@@ -131,6 +141,7 @@ def view_rating(connection):
     """ Displays all unique film ratings with descriptions."""
     try:
         with connection.cursor() as cursor:
+            # Query with CASE to map rating descriptions
             cursor.execute("""SELECT distinct(rating),
                                 CASE
                                 WHEN rating = "NC-17" THEN "Adults only"
