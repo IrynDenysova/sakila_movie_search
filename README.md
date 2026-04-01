@@ -24,9 +24,8 @@ All searches are logged to MongoDB for analytics and statistics.
 
 1. Clone the repository:
  
-``` bash
-
-git clone ...
+```bash
+git clone git@github.com:IrynDenysova/sakila_movie_search.git
 cd sakila_movie_search
 ```
 2. Install required packages:
@@ -43,9 +42,9 @@ MYSQL_USER=root
 MYSQL_PASSWORD=yourpassword
 MYSQL_DATABASE=sakila
 
-mongo_collection = os.getenv("MONGO_COLLECTION")
-client = MongoClient(os.getenv("MONGO_URI"),
-serverSelectionTimeoutMS=5000)
+MONGO_URI=mongodb_connection_string
+MONGO_COLLECTION=collection_name
+MONGO_DB_NAME=db_name
 ```
 
  **Configuration**
@@ -66,27 +65,25 @@ _Menu Options:_
 3. Search by rating
 4. View last queries
 5. View popular queries
-6. Exit
+0. Exit
 ```
 
 
  **Project Structure**
 
 ```
-project/
-│
-├── main.py
-├── DB/
+project
+├── DB
 │   └── mysql_connector.py
-│
-├── services/
-│   ├── searcher.py
-│   ├── log_stats.py
-│
-├── logs/
-│   └── log_writer.py
-│
-└── .env
+├── main.py
+├── README.md
+├── requirements.txt
+├── run_pylint.sh
+└── services
+    ├── log_stats.py
+    ├── log_writer.py
+    ├── paginationer.py
+    └── searcher.py
 ```
 
  **Logging**
