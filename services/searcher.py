@@ -6,7 +6,13 @@ from .log_writer import log_film
 def search_by_title(connection):
     """Searches films by title with pagination."""
     try:
+        print("\n" + "-" * 35)
+        print("Searching films by title.(0 to back)")
+        print("-" * 35)
         title = input("Enter film title or part of title: ").strip()
+
+        if title == "0":
+            return
         if not title:
             print("Empty input.")
             return
@@ -44,6 +50,7 @@ def search_by_title(connection):
 def view_genre_years(connection) -> dict[str, tuple[int, int]]:
     """ Displays min and max release years for each genre."""
     genres_with_years = {}
+    genres = []
     try:
         with connection.cursor() as cursor:
             # Get min/max year per genre
@@ -62,7 +69,8 @@ def view_genre_years(connection) -> dict[str, tuple[int, int]]:
             for i,(min_year ,max_year, genre )in enumerate(all_found_genres_years,1):
                 table_data.append([i,genre,f"{min_year}-{max_year}"])
                 headers = ["Film ID","Genre","Years"]
-                genres_with_years[genre] = (min_year,max_year)
+                genres_with_years[genre] = (min_year,max_year, i)
+                genres.append(genre)
             print(tabulate(table_data,headers= headers ,tablefmt="outline"))
     except Exception as e:
         print(f"Error fetching genre data: {e}")
@@ -74,10 +82,24 @@ def search_by_genre_years(connection, genres: dict[str, tuple[int, int]]):
     try:
         # Ask user for genre until valid
         while True:
+            print("\n" + "-" * 35)
+            print("Searching films by genre.(0 to back)")
+            print("-" * 35)
             search_genre = input("Enter the genre: ").strip().title()
+
+            if search_genre.isnumeric():
+              genre_names = sorted(genres.keys())
+              genre_id = int(search_genre) - 1
+              search_genre = genre_names[genre_id]
+
+
+            if search_genre == "0":
+                return
+
             if search_genre not in genres:
                 print("Genre not found.")
                 continue
+
             elif not search_genre:
                 print("Invalid genre.")
                 continue
@@ -87,8 +109,15 @@ def search_by_genre_years(connection, genres: dict[str, tuple[int, int]]):
         while True:
             min_year = genres[search_genre][0]
             max_year = genres[search_genre][1]
+            print("\n" + "-" * 35)
+            print("Searching films by year(s).(0 to back)")
+            print("-" * 35)
             start_year = input(f"Enter start year from (default {min_year}): ").strip() or str(min_year)
+            if start_year == "0":
+                return
             end_year = input(f"Enter end year to (default {max_year}): ").strip() or str(max_year)
+            if end_year == "0":
+                return
 
             # Validate input
             if not start_year.isdigit() or not end_year.isdigit():
@@ -102,17 +131,18 @@ def search_by_genre_years(connection, genres: dict[str, tuple[int, int]]):
         query = """
             SELECT f.title, f.release_year
             FROM film AS f
-            JOIN film_category AS fc ON f.film_id = fc.film_id
-            JOIN category AS c ON c.category_id = fc.category_id
+            LEFT JOIN film_category AS fc ON f.film_id = fc.film_id
+            LEFT JOIN category AS c ON c.category_id = fc.category_id
             WHERE c.name LIKE %s
             AND f.release_year BETWEEN %s AND %s
             ORDER BY f.title
             LIMIT %s OFFSET %s
         """
+
         count_query = """SELECT COUNT(*)
             FROM film AS f
-            JOIN film_category AS fc ON f.film_id = fc.film_id
-            JOIN category AS c ON c.category_id = fc.category_id
+            LEFT JOIN film_category AS fc ON f.film_id = fc.film_id
+            LEFT JOIN category AS c ON c.category_id = fc.category_id
             WHERE c.name LIKE %s
             AND f.release_year BETWEEN %s AND %s
             """
@@ -128,7 +158,7 @@ def search_by_genre_years(connection, genres: dict[str, tuple[int, int]]):
         try:
             log_film(
                 "genre-year",
-                {"genre": search_genre, "year from": start_year, "year to": end_year},
+                {"genre": search_genre, "year_from": start_year , "year_to": end_year},
                 total)
         except Exception as log_error:
             print(f"Logging error: {log_error}")
@@ -167,7 +197,12 @@ def view_rating(connection):
 def search_by_rating(connection):
     """ Searches films by rating with pagination."""
     try:
+        print("\n" + "-" * 35)
+        print("Searching films by rating.(0 to back)")
+        print("-" * 35)
         rating = input("Enter rating (PG, G, NC-17...): ").strip().upper()
+        if rating == "0":
+            return
 
         if not rating:
             print("Invalid input.")
@@ -190,7 +225,7 @@ def search_by_rating(connection):
             print(f"Database error: {db_error}")
             return
         try:
-            log_film("rating", {"keyword": rating}, total)
+            log_film("rating", {"rating": rating}, total)
         except Exception as log_error:
             print(f"Logging error: {log_error}")
 

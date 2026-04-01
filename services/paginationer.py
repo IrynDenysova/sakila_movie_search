@@ -22,8 +22,10 @@ def paginate_query(connection, query, count_query, params, limit=10):
 
         # Loop through results page by page
         while offset < total:
-            print(f"\n----- Found {total} film(s) -----")
-            print(f"------ Page {page} ------")
+            print("\n" + "-" * 50)
+            print(f"Found {total} film(s)".center(50))
+            print("-" * 50)
+            print(f"Page {page}".center(50))
 
             # Fetch paginated data using LIMIT and OFFSET
             with connection.cursor(DictCursor) as cursor:

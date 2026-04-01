@@ -1,8 +1,10 @@
-from pymongo import MongoClient, errors
+import pymongo
 from datetime import datetime
+from pymongo import MongoClient, errors
 import os
 from dotenv import load_dotenv
 load_dotenv()
+
 
 
 mongo_collection = os.getenv("MONGO_COLLECTION")
@@ -21,7 +23,7 @@ def log_film(search_type, params, count):
     try:
         # Insert a new document into the logs collection
         logs_collection.insert_one({
-                "timestamp": datetime.now(), # Current date and time of the request
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S") , # Current date and time of the request
                 "search_type": search_type, # Type/category of the search
                 "params": params,   # Search parameters (stored as a dictionary)
                 "results_count": count  # Number of results found

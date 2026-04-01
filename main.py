@@ -12,7 +12,7 @@ try:
             while True:
                 # Display menu
                 print("\n" + "*" * 50)
-                print("FILM FINDER")
+                print("FILM FINDER".center(50))
                 print("*" * 50)
                 print("1. Search by keyword")
                 print("2. Search by genre and year range")
@@ -20,7 +20,7 @@ try:
                 print("4. View last queries")
                 print("5. View popular queries")
                 print("0. Exit")
-
+                print("*" * 50)
                 choice = input("ENTER YOUR CHOICE: ")
                 # Handle menu options
                 if choice == "1":

@@ -42,7 +42,10 @@ MYSQL_HOST=localhost
 MYSQL_USER=root
 MYSQL_PASSWORD=yourpassword
 MYSQL_DATABASE=sakila
-MONGO_URI=mongodb://localhost:27017
+
+mongo_collection = os.getenv("MONGO_COLLECTION")
+client = MongoClient(os.getenv("MONGO_URI"),
+serverSelectionTimeoutMS=5000)
 ```
 
  **Configuration**
