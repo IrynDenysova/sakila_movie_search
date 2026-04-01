@@ -107,8 +107,7 @@ def search_by_genre_years(connection, genres: dict[str, tuple[int, int]]):
 
         # Ask user for year range
         while True:
-            min_year = genres[search_genre][0]
-            max_year = genres[search_genre][1]
+            min_year, max_year = genres[search_genre]
             print("\n" + "-" * 35)
             print("Searching films by year(s) (0 to go back)")
             print("-" * 35)
