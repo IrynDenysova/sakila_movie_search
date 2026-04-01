@@ -68,7 +68,7 @@ def view_genre_years(connection) -> dict[str, tuple[int, int]]:
             for i,(min_year ,max_year, genre )in enumerate(all_found_genres_years,1):
                 table_data.append([i,genre,f"{min_year}-{max_year}"])
                 headers = ["Film ID","Genre","Years"]
-                genres_with_years[genre] = (min_year,max_year, i)
+                genres_with_years[genre] = (min_year,max_year)
             print(tabulate(table_data,headers= headers ,tablefmt="outline"))
     except Exception as e:
         print(f"Error fetching genre data: {e}")
