@@ -1,4 +1,3 @@
-import pymongo
 from datetime import datetime
 from pymongo import MongoClient, errors
 import os
