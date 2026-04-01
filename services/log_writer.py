@@ -23,10 +23,14 @@ def log_film(search_type, params, count):
     try:
         # Insert a new document into the logs collection
         logs_collection.insert_one({
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S") , # Current date and time of the request
-                "search_type": search_type, # Type/category of the search
-                "params": params,   # Search parameters (stored as a dictionary)
-                "results_count": count  # Number of results found
+                # Current date and time of the request
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                # Type/category of the search
+                "search_type": search_type, 
+                # Search parameters (stored as a dictionary)
+                "params": params,   
+                # Number of results found
+                "results_count": count  
                     })
     # Handle connection-related errors
     except errors.ConnectionFailure:

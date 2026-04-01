@@ -88,9 +88,9 @@ def search_by_genre_years(connection, genres: dict[str, tuple[int, int]]):
             search_genre = input("Enter the genre: ").strip().title()
 
             if search_genre.isnumeric():
-              genre_names = sorted(genres.keys())
-              genre_id = int(search_genre) - 1
-              search_genre = genre_names[genre_id]
+                genre_names = sorted(genres.keys())
+                genre_id = int(search_genre) - 1
+                search_genre = genre_names[genre_id]
 
 
             if search_genre == "0":
@@ -112,7 +112,8 @@ def search_by_genre_years(connection, genres: dict[str, tuple[int, int]]):
             print("\n" + "-" * 35)
             print("Searching films by year(s).(0 to back)")
             print("-" * 35)
-            start_year = input(f"Enter start year from (default {min_year}): ").strip() or str(min_year)
+            start_year = input(f"Enter start year from (default {min_year}): ").strip()
+            start_year = start_year or str(min_year)
             if start_year == "0":
                 return
             end_year = input(f"Enter end year to (default {max_year}): ").strip() or str(max_year)

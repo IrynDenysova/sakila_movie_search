@@ -1,6 +1,11 @@
 from DB import mysql_connector
 import pymysql
-from services.searcher import search_by_title, search_by_genre_years, search_by_rating, view_genre_years, view_rating
+from services.searcher import (
+    search_by_title,
+    search_by_genre_years,
+    search_by_rating,
+    view_genre_years,
+    view_rating)
 from services.log_stats import get_unique_queries, get_stats_queries
 
 try:
